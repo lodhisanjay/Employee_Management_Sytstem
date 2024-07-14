@@ -1,11 +1,9 @@
 package com.RegCURD.Controller;
 
 import com.RegCURD.entity.Employee;
-import com.RegCURD.repository.EmpRepo;
 import com.RegCURD.service.EmpService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,22 +12,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 @Controller
 public class HomeController {
-    @Autowired
-    private EmpService service;
-    private EmpRepo repo;
-    @Autowired
-    public HomeController(EmpRepo repo) {
-        this.repo = repo;
-    }
+    @Autowired private EmpService service;
 
     @GetMapping("/")
     public String home(Model m) {
@@ -44,25 +31,17 @@ public class HomeController {
     }
 
     @PostMapping("/register")
-    public String empRegister(@ModelAttribute Employee employee, @RequestParam("img") MultipartFile img, Model model) {
+    public String empRegister(
+            @ModelAttribute Employee employee, @RequestParam("img") MultipartFile img, Model model) {
 
-        if (!img.isEmpty()) {
-            try {
-                employee.setProfile_pic(img.getOriginalFilename());
-                Employee savedEmployee = repo.save(employee);
+        boolean isSaved = service.addEmpWithImage(employee, img);
 
-                if (savedEmployee != null) {
-                    File saveFile = new ClassPathResource("static/images").getFile();
-                    Path path = Paths.get(saveFile.getAbsolutePath() + File.separator + img.getOriginalFilename());
-                    //System.out.println(path);//print the path of image
-                    Files.copy(img.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        if (isSaved) {
+            model.addAttribute("msg", "Employee Added Successfully..");
+        } else {
+            model.addAttribute("msg", "Failed to add employee.");
         }
 
-        model.addAttribute("msg", "Employee Added Successfully..");
         return "redirect:/";
     }
 
@@ -74,24 +53,16 @@ public class HomeController {
     }
 
     @PostMapping("/update")
-    public String update(@ModelAttribute Employee employee, @RequestParam("img") MultipartFile img,
-                              HttpSession session, Model model) {
-        if (!img.isEmpty()) {
-            try {
-                employee.setProfile_pic(img.getOriginalFilename());
-                Employee savedEmployee = repo.save(employee);
+    public String update(
+            @ModelAttribute Employee employee, @RequestParam("img") MultipartFile img, Model model) {
+        boolean isUpdate = service.updateEmpWithImage(employee, img);
 
-                if (savedEmployee != null) {
-                    File saveFile = new ClassPathResource("static/images").getFile();
-                    Path path = Paths.get(saveFile.getAbsolutePath() + File.separator + img.getOriginalFilename());
-                    Files.copy(img.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        if (isUpdate) {
+            model.addAttribute("msg", "Employee Details Update Successfully..");
+        } else {
+            model.addAttribute("msg", "Failed to update employee details.");
         }
 
-        model.addAttribute("msg", "Employee Data Update Successfully..");
         return "redirect:/";
     }
 
